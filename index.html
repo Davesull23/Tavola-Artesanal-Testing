@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tavola Artesanal· Charcutería Artesanal</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --cream:#FAF7F2;--warm:#F0E8D8;--dark:#2C1810;--accent:#8B4513;--gold:#C8902A;
+  --text:#4A3728;--light:#FFF9F0;--wa:#25D366;--wa-dark:#128C7E;
+}
+html{scroll-behavior:smooth}
+body{background:var(--cream);font-family:'Lato',sans-serif;color:var(--text);min-height:100vh}
+
+.hero{background:var(--dark);padding:3rem 2rem 2.5rem;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent,transparent 40px,rgba(200,144,42,0.05) 40px,rgba(200,144,42,0.05) 80px)}
+.hero-tag{font-size:11px;letter-spacing:4px;color:var(--gold);text-transform:uppercase;margin-bottom:.5rem}
+.hero h1{font-family:'Playfair Display',serif;font-size:3rem;color:#FAF7F2;line-height:1.1;margin-bottom:.5rem}
+.hero h1 em{color:var(--gold);font-style:italic}
+.hero-sub{font-size:14px;color:rgba(250,247,242,.55);letter-spacing:1px}
+
+.nav-tabs{display:flex;justify-content:center;background:var(--warm);border-bottom:1px solid rgba(139,69,19,.15);position:sticky;top:0;z-index:200}
+.tab-btn{background:none;border:none;padding:1rem 1.4rem;font-family:'Lato',sans-serif;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--text);cursor:pointer;opacity:.5;border-bottom:2px solid transparent;transition:all .2s}
+.tab-btn.active{opacity:1;border-bottom-color:var(--accent);color:var(--accent);font-weight:700}
+
+.section{display:none;padding:2rem;animation:fadeIn .3s ease}
+.section.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+.boards-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1.5rem;max-width:900px;margin:0 auto}
+.board-card{background:var(--light);border:1.5px solid rgba(139,69,19,.12);border-radius:16px;overflow:hidden;cursor:pointer;transition:all .25s;position:relative}
+.board-card:hover{transform:translateY(-3px);border-color:var(--gold);box-shadow:0 8px 28px rgba(44,24,16,.12)}
+.board-card.selected{border:2.5px solid var(--accent);background:#FFF5EB}
+.board-img{width:100%;height:130px;display:flex;align-items:center;justify-content:center;font-size:3.5rem;background:var(--warm)}
+.board-info{padding:1rem 1.2rem}
+.board-name{font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--dark);margin-bottom:4px}
+.board-desc{font-size:12px;color:var(--text);opacity:.7;line-height:1.5;margin-bottom:.75rem}
+.board-price{font-size:1.2rem;font-weight:700;color:var(--accent)}
+.board-price span{font-size:11px;font-weight:400;opacity:.65;margin-left:4px}
+.select-badge{position:absolute;top:10px;right:10px;background:var(--accent);color:#fff;font-size:10px;letter-spacing:1px;padding:3px 8px;border-radius:20px;display:none}
+.board-card.selected .select-badge{display:block}
+.continue-btn{display:block;margin:2rem auto 0;background:var(--accent);color:#fff;border:none;padding:.9rem 2.5rem;border-radius:8px;font-family:'Lato',sans-serif;font-weight:700;font-size:14px;letter-spacing:1px;cursor:pointer;transition:all .2s;max-width:340px;width:100%}
+.continue-btn:hover:not(:disabled){background:#a0521a;transform:translateY(-1px)}
+.continue-btn:disabled{opacity:.35;cursor:not-allowed}
+
+.products-layout{display:grid;grid-template-columns:1fr 330px;gap:2rem;max-width:1000px;margin:0 auto;align-items:start}
+.category-group{margin-bottom:1.5rem}
+.category-label{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:.75rem;font-weight:700}
+.product-row{display:flex;align-items:center;gap:12px;padding:.65rem 0;border-bottom:.5px solid rgba(139,69,19,.08)}
+.product-row:last-child{border:none}
+.prod-icon{font-size:1.4rem;width:32px;text-align:center;flex-shrink:0}
+.prod-info{flex:1}
+.prod-name{font-size:14px;font-weight:700;color:var(--dark)}
+.prod-price{font-size:12px;color:var(--gold)}
+.qty-ctrl{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.qty-btn{width:28px;height:28px;border-radius:50%;border:1px solid rgba(139,69,19,.25);background:none;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;color:var(--accent);transition:all .15s;line-height:1;padding:0}
+.qty-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.qty-num{min-width:18px;text-align:center;font-weight:700;font-size:14px;color:var(--dark)}
+
+.cart-panel{background:var(--dark);border-radius:16px;padding:1.5rem;color:#FAF7F2;position:sticky;top:70px}
+.cart-title{font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--gold);margin-bottom:.75rem}
+.board-in-cart{font-size:12px;color:rgba(250,247,242,.45);margin-bottom:10px;padding-bottom:10px;border-bottom:.5px solid rgba(250,247,242,.1)}
+.cart-items{min-height:60px}
+.cart-item{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:.5px solid rgba(250,247,242,.08);font-size:13px}
+.cart-item:last-child{border:none}
+.cart-item-name{color:rgba(250,247,242,.82)}
+.cart-item-qty{color:var(--gold);font-weight:700;margin:0 5px}
+.cart-item-price{color:#FAF7F2;font-weight:700}
+.empty-cart{text-align:center;font-size:13px;color:rgba(250,247,242,.28);padding:1.2rem 0;font-style:italic}
+hr.cdiv{border:none;border-top:1px solid rgba(250,247,242,.12);margin:1rem 0}
+.cart-row{display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px}
+.cart-row.total{font-size:1.05rem;font-weight:700;color:var(--gold);margin-top:6px}
+
+/* FORM FIELDS */
+.field-label{font-size:11px;letter-spacing:1px;color:var(--text);opacity:.55;text-transform:uppercase;display:block;margin-bottom:3px;margin-top:14px}
+.field-input{width:100%;border:1px solid rgba(139,69,19,.2);border-radius:8px;padding:.65rem .9rem;font-family:'Lato',sans-serif;font-size:14px;color:var(--dark);background:#fff;outline:none;transition:border .2s}
+.field-input:focus{border-color:var(--accent)}
+.field-textarea{width:100%;border:1px solid rgba(139,69,19,.2);border-radius:8px;padding:.65rem .9rem;font-family:'Lato',sans-serif;font-size:14px;color:var(--dark);background:#fff;outline:none;resize:none;height:75px;transition:border .2s}
+.field-textarea:focus{border-color:var(--accent)}
+
+/* MAP */
+.map-search-row{display:flex;gap:8px;margin-top:6px;margin-bottom:6px}
+.map-search-row input{flex:1;border:1px solid rgba(139,69,19,.2);border-radius:8px;padding:.6rem .9rem;font-family:'Lato',sans-serif;font-size:13px;color:var(--dark);background:#fff;outline:none;transition:border .2s}
+.map-search-row input:focus{border-color:var(--accent)}
+.map-search-btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:.6rem 1.1rem;cursor:pointer;font-family:'Lato',sans-serif;font-size:13px;font-weight:700;white-space:nowrap;transition:background .2s;min-width:80px}
+.map-search-btn:hover{background:#a0521a}
+.map-search-btn:disabled{opacity:.6;cursor:not-allowed}
+.map-box{border:1.5px solid rgba(139,69,19,.2);border-radius:12px;overflow:hidden;margin-bottom:6px}
+#map{height:300px;width:100%}
+.map-hint{font-size:11px;color:var(--text);opacity:.5;margin-bottom:6px;display:flex;align-items:flex-start;gap:5px;line-height:1.4}
+.addr-display{background:var(--warm);border:1px solid rgba(139,69,19,.15);border-radius:8px;padding:.65rem .9rem;font-size:13px;color:var(--text);opacity:.6;line-height:1.5;font-style:italic;transition:all .3s}
+.addr-display.selected{color:var(--accent);font-weight:700;opacity:1;font-style:normal;background:#FFF5EB;border-color:rgba(139,69,19,.3)}
+
+/* WA */
+.wa-btn{width:100%;background:var(--wa);color:#fff;border:none;padding:.9rem;border-radius:8px;font-family:'Lato',sans-serif;font-weight:700;font-size:14px;cursor:pointer;transition:all .2s;margin-top:16px;display:flex;align-items:center;justify-content:center;gap:8px}
+.wa-btn:hover{background:var(--wa-dark);transform:scale(1.02)}
+.wa-icon{width:20px;height:20px;fill:#fff;flex-shrink:0}
+.wa-float{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--wa);border:none;border-radius:50%;width:56px;height:56px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 16px rgba(37,211,102,.35);transition:all .2s;z-index:300}
+.wa-float:hover{background:var(--wa-dark);transform:scale(1.08)}
+
+.overlay{display:none;position:fixed;inset:0;background:rgba(44,24,16,.85);z-index:999;align-items:center;justify-content:center;padding:1rem}
+.overlay.show{display:flex}
+.confirm-box{background:var(--light);border-radius:20px;padding:2.5rem 2rem;max-width:380px;text-align:center;width:100%}
+.confirm-icon{font-size:3rem;margin-bottom:1rem}
+.confirm-box h2{font-family:'Playfair Display',serif;color:var(--dark);margin-bottom:.5rem;font-size:1.5rem}
+.confirm-box p{font-size:14px;color:var(--text);opacity:.75;margin-bottom:1.5rem;line-height:1.6}
+.confirm-close{background:var(--accent);color:#fff;border:none;padding:.75rem 2.5rem;border-radius:8px;cursor:pointer;font-size:14px;font-weight:700;font-family:'Lato',sans-serif}
+
+@media(max-width:700px){
+  .products-layout{grid-template-columns:1fr}
+  .hero h1{font-size:2rem}
+  .tab-btn{padding:.85rem .7rem;font-size:10px;letter-spacing:1px}
+  #map{height:240px}
+}
+.leaflet-top,.leaflet-bottom{z-index:10!important}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-tag">Artesanal · Premium · Costarricense</div>
+  <h1><em>Tavola</em> Artesanal </h1>
+  <p class="hero-sub">Curada con los mejores quesos, embutidos y acompañantes</p>
+</div>
+
+<div class="nav-tabs">
+  <button class="tab-btn active" onclick="showTab('tablas',this)">1. Elige tu Tabla</button>
+  <button class="tab-btn" onclick="goToCustomizeTab(this)" id="customTabBtn">2. Personaliza</button>
+  <button class="tab-btn" onclick="goToContactTab(this)" id="contactTabBtn">3. Tu Pedido</button>
+</div>
+
+<!-- TABLAS -->
+<div id="tablas" class="section active">
+  <div style="text-align:center;max-width:580px;margin:0 auto 2rem">
+    <p style="font-size:13px;color:var(--text);opacity:.65">Selecciona la tabla base que mejor se adapte a tu ocasión</p>
+  </div>
+  <div class="boards-grid">
+    <div class="board-card" onclick="selectBoard(0)" id="board-0">
+      <div class="select-badge">✓ Seleccionada</div>
+      <div class="board-img">🧀</div>
+      <div class="board-info">
+        <div class="board-name">Tabla Clásica</div>
+        <div class="board-desc">3 quesos artesanales, 2 embutidos, galletas y mermelada de guayaba</div>
+        <div class="board-price">₡12,500 <span>· 2–3 personas</span></div>
+      </div>
+    </div>
+    <div class="board-card" onclick="selectBoard(1)" id="board-1">
+      <div class="select-badge">✓ Seleccionada</div>
+      <div class="board-img">🍖</div>
+      <div class="board-info">
+        <div class="board-name">Tabla Gourmet</div>
+        <div class="board-desc">5 quesos importados, jamón serrano, prosciutto, frutos y miel</div>
+        <div class="board-price">₡22,900 <span>· 3–5 personas</span></div>
+      </div>
+    </div>
+    <div class="board-card" onclick="selectBoard(2)" id="board-2">
+      <div class="select-badge">✓ Seleccionada</div>
+      <div class="board-img">🍇</div>
+      <div class="board-info">
+        <div class="board-name">Tabla Vegana</div>
+        <div class="board-desc">Hummus, verduras frescas, quesos de nuez, aceitunas y pan artesanal</div>
+        <div class="board-price">₡14,800 <span>· 2–4 personas</span></div>
+      </div>
+    </div>
+    <div class="board-card" onclick="selectBoard(3)" id="board-3">
+      <div class="select-badge">✓ Seleccionada</div>
+      <div class="board-img">🥂</div>
+      <div class="board-info">
+        <div class="board-name">Tabla Celebración</div>
+        <div class="board-desc">Selección premium de 8 productos, frutas de temporada, chocolate y flores</div>
+        <div class="board-price">₡38,500 <span>· 5–8 personas</span></div>
+      </div>
+    </div>
+  </div>
+  <button class="continue-btn" id="continueBtn" disabled onclick="goToCustomizeTab()">
+    Selecciona una tabla para continuar →
+  </button>
+</div>
+
+<!-- PERSONALIZAR -->
+<div id="personalizar" class="section">
+  <div class="products-layout">
+    <div>
+      <div class="category-group">
+        <div class="category-label">🧀 Quesos</div>
+        <div id="cheese-products"></div>
+      </div>
+      <div class="category-group">
+        <div class="category-label">🍖 Embutidos &amp; Carnes</div>
+        <div id="meat-products"></div>
+      </div>
+      <div class="category-group">
+        <div class="category-label">🫙 Acompañantes</div>
+        <div id="sides-products"></div>
+      </div>
+      <div class="category-group">
+        <div class="category-label">🍞 Panes &amp; Crackers</div>
+        <div id="bread-products"></div>
+      </div>
+    </div>
+    <div class="cart-panel">
+      <div class="cart-title">🛒 Mi Selección</div>
+      <div class="board-in-cart" id="board-in-cart">—</div>
+      <div class="cart-items" id="cartItems">
+        <div class="empty-cart">Sin productos adicionales aún</div>
+      </div>
+      <hr class="cdiv">
+      <div class="cart-row"><span style="opacity:.55">Tabla base</span><span id="baseTotal">₡0</span></div>
+      <div class="cart-row"><span style="opacity:.55">Adicionales</span><span id="extrasTotal">₡0</span></div>
+      <div class="cart-row total"><span>Total</span><span id="grandTotal">₡0</span></div>
+      <button class="continue-btn" style="background:var(--gold);margin-top:1rem;font-size:13px;padding:.8rem" onclick="goToContactTab()">
+        Continuar al pedido →
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- CONTACTO -->
+<div id="contacto" class="section">
+  <div style="max-width:640px;margin:0 auto">
+    <p style="font-size:13px;color:var(--text);opacity:.65;margin-bottom:1.5rem;text-align:center">
+      Completa tus datos y envía tu pedido directo por WhatsApp
+    </p>
+
+    <!-- Resumen -->
+    <div style="background:var(--dark);border-radius:16px;padding:1.5rem;margin-bottom:1.5rem;color:#FAF7F2">
+      <div style="font-family:'Playfair Display',serif;font-size:1rem;color:var(--gold);margin-bottom:.75rem">Resumen de tu pedido</div>
+      <div id="summary-board" style="font-size:13px;color:rgba(250,247,242,.65);margin-bottom:6px"></div>
+      <div id="summary-extras"></div>
+      <hr class="cdiv">
+      <div style="display:flex;justify-content:space-between;font-weight:700;color:var(--gold);font-size:1.05rem">
+        <span>Total</span><span id="summary-total">₡0</span>
+      </div>
+    </div>
+
+    <!-- Formulario -->
+    <div style="background:var(--light);border:1px solid rgba(139,69,19,.12);border-radius:16px;padding:1.5rem">
+      <div style="font-family:'Playfair Display',serif;font-size:1rem;color:var(--dark);margin-bottom:.25rem">Tus datos de contacto</div>
+
+      <label class="field-label" for="clientName">Nombre completo *</label>
+      <input class="field-input" type="text" id="clientName" placeholder="Ej: María González">
+
+      <label class="field-label" for="clientPhone">Número de WhatsApp *</label>
+      <input class="field-input" type="tel" id="clientPhone" placeholder="Ej: 8888-1234">
+
+      <label class="field-label" for="deliveryDate">Fecha deseada de entrega</label>
+      <input class="field-input" type="date" id="deliveryDate">
+
+      <!-- MAPA -->
+      <label class="field-label">📍 Dirección de entrega *</label>
+      <p style="font-size:12px;color:var(--text);opacity:.55;margin-bottom:6px">Busca tu dirección o haz clic directamente en el mapa</p>
+
+      <div class="map-search-row">
+        <input type="text" id="mapSearch" placeholder="Ej: Escazú, San José, Costa Rica" onkeydown="if(event.key==='Enter')searchAddress()">
+        <button class="map-search-btn" id="searchBtn" onclick="searchAddress()">Buscar</button>
+      </div>
+
+      <div class="map-box">
+        <div id="map"></div>
+      </div>
+
+      <div class="map-hint">
+        <span style="flex-shrink:0">📌</span>
+        <span>Haz clic en el mapa para colocar el pin, o arrástralo para ajustar la ubicación exacta</span>
+      </div>
+
+      <div class="addr-display" id="addrDisplay">Ninguna ubicación seleccionada aún…</div>
+
+      <label class="field-label" for="notes" style="margin-top:14px">Señas adicionales / referencias</label>
+      <textarea class="field-textarea" id="notes" placeholder="Ej: Casa verde, portón negro, del cruce 200m al norte..."></textarea>
+
+      <button class="wa-btn" onclick="sendWhatsApp()">
+        <svg class="wa-icon" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        Enviar pedido por WhatsApp
+      </button>
+      <p style="font-size:11px;color:var(--text);opacity:.4;text-align:center;margin-top:8px">
+        Se abrirá WhatsApp con tu pedido completo y el enlace de ubicación en Google Maps
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Flotante WhatsApp -->
+<button class="wa-float" onclick="openDirectWA()" title="Consultas por WhatsApp">
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+</button>
+
+<!-- Confirmación -->
+<div class="overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <div class="confirm-icon">🎉</div>
+    <h2>¡Pedido enviado!</h2>
+    <p>Tu tabla está siendo preparada con mucho amor. Revisa WhatsApp para continuar con tu pedido.</p>
+    <button class="confirm-close" onclick="closeConfirm()">Perfecto, gracias</button>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════
+//  CONFIGURACIÓN — edita estos valores
+// ═══════════════════════════════════════════════════════════
+const WA_NUMBER  = '50684664545';      // Número WhatsApp del negocio (con código país)
+const MAP_CENTER = [9.9281, -84.0907]; // Centro inicial del mapa (San José, CR)
+const MAP_ZOOM   = 13;
+// ═══════════════════════════════════════════════════════════
+
+const boards = [
+  {name:'Tabla Clásica',    price:12500},
+  {name:'Tabla Gourmet',    price:22900},
+  {name:'Tabla Vegana',     price:14800},
+  {name:'Tabla Celebración',price:38500}
+];
+const products = {
+  cheese:[
+    {id:'c1',icon:'🧀',name:'Brie francés',       price:3200},
+    {id:'c2',icon:'🧀',name:'Manchego curado',     price:2800},
+    {id:'c3',icon:'🧀',name:'Gorgonzola',          price:3500},
+    {id:'c4',icon:'🧀',name:'Queso de cabra',      price:2600},
+    {id:'c5',icon:'🧀',name:'Gouda ahumado',       price:2400}
+  ],
+  meat:[
+    {id:'m1',icon:'🥩',name:'Prosciutto di Parma', price:4200},
+    {id:'m2',icon:'🥩',name:'Salami milanés',       price:2900},
+    {id:'m3',icon:'🥩',name:'Jamón serrano',        price:3600},
+    {id:'m4',icon:'🥩',name:'Chorizo ibérico',      price:3100},
+    {id:'m5',icon:'🥩',name:'Bresaola',             price:4500}
+  ],
+  sides:[
+    {id:'s1',icon:'🫒',name:'Aceitunas mixtas',          price:1800},
+    {id:'s2',icon:'🍯',name:'Miel de abeja',              price:1500},
+    {id:'s3',icon:'🍓',name:'Mermelada de frutos rojos',  price:1600},
+    {id:'s4',icon:'🥜',name:'Nueces mixtas',              price:2200},
+    {id:'s5',icon:'🫙',name:'Paté de pato',               price:3800},
+    {id:'s6',icon:'🍇',name:'Uvas frescas',               price:2100}
+  ],
+  bread:[
+    {id:'b1',icon:'🍞',name:'Pan baguette artesanal', price:1200},
+    {id:'b2',icon:'🥨',name:'Crackers de romero',     price:1400},
+    {id:'b3',icon:'🥖',name:'Crostini de oliva',      price:1600},
+    {id:'b4',icon:'🍪',name:'Galletas de arroz',      price:900}
+  ]
+};
+
+let selectedBoard=-1, cart={}, map=null, marker=null;
+let selectedLatLng=null, selectedAddress='';
+let mapReady=false;
+
+const fmt = n => '₡' + n.toLocaleString('es-CR');
+
+// ── MAP ────────────────────────────────────────────────────
+const pinIcon = L.divIcon({
+  className:'',
+  html:`<div style="width:32px;height:32px;background:#8B4513;border:3px solid #fff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 3px 12px rgba(0,0,0,0.35)"></div>`,
+  iconSize:[32,32],iconAnchor:[16,32],popupAnchor:[0,-36]
+});
+
+function initMap(){
+  if(mapReady) return;
+  mapReady = true;
+  map = L.map('map').setView(MAP_CENTER, MAP_ZOOM);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    attribution:'© <a href="https://openstreetmap.org">OpenStreetMap</a>',maxZoom:19
+  }).addTo(map);
+  marker = L.marker(MAP_CENTER,{draggable:true,icon:pinIcon}).addTo(map);
+  map.on('click', e => placeMarker(e.latlng));
+  marker.on('dragend', () => { const p=marker.getLatLng(); reverseGeocode(p.lat,p.lng); });
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(p=>{
+      const ll=L.latLng(p.coords.latitude,p.coords.longitude);
+      map.setView(ll,16); placeMarker(ll);
+    },()=>{});
+  }
+  setTimeout(()=>map.invalidateSize(),350);
+}
+
+function placeMarker(latlng){
+  marker.setLatLng(latlng);
+  selectedLatLng=latlng;
+  reverseGeocode(latlng.lat,latlng.lng);
+}
+
+async function reverseGeocode(lat,lng){
+  const el=document.getElementById('addrDisplay');
+  el.textContent='Obteniendo dirección…';
+  el.classList.remove('selected');
+  try{
+    const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
+      {headers:{'Accept-Language':'es'}});
+    const d=await r.json();
+    selectedAddress=d.display_name||`${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+  }catch{
+    selectedAddress=`${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+  }
+  el.textContent='📍 '+selectedAddress;
+  el.classList.add('selected');
+}
+
+async function searchAddress(){
+  const q=document.getElementById('mapSearch').value.trim();
+  if(!q) return;
+  const btn=document.getElementById('searchBtn');
+  btn.textContent='…'; btn.disabled=true;
+  try{
+    const r=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1&countrycodes=cr`,
+      {headers:{'Accept-Language':'es'}});
+    const d=await r.json();
+    if(d&&d.length){
+      const ll=L.latLng(+d[0].lat,+d[0].lon);
+      map.setView(ll,17); placeMarker(ll);
+    } else {
+      alert('No se encontró esa dirección. Intenta ser más específico o haz clic en el mapa.');
+    }
+  }catch{ alert('Error al buscar. Verifica tu conexión.'); }
+  btn.textContent='Buscar'; btn.disabled=false;
+}
+
+// ── TABS ────────────────────────────────────────────────────
+function showTab(id,btn){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(btn) btn.classList.add('active');
+  if(id==='contacto'){ setTimeout(initMap,120); updateSummary(); }
+}
+function selectBoard(i){
+  selectedBoard=i;
+  document.querySelectorAll('.board-card').forEach((c,j)=>c.classList.toggle('selected',j===i));
+  const btn=document.getElementById('continueBtn');
+  btn.disabled=false; btn.textContent='Personalizar '+boards[i].name+' →';
+}
+function goToCustomizeTab(btn){
+  if(selectedBoard<0) return;
+  showTab('personalizar',btn||document.getElementById('customTabBtn'));
+  document.getElementById('board-in-cart').textContent=boards[selectedBoard].name;
+  renderProducts(); updateCart();
+}
+function goToContactTab(btn){
+  if(selectedBoard<0){alert('Por favor selecciona primero una tabla.');return;}
+  showTab('contacto',btn||document.getElementById('contactTabBtn'));
+}
+
+// ── PRODUCTS ───────────────────────────────────────────────
+function renderProducts(){
+  renderCat('cheese-products',products.cheese);
+  renderCat('meat-products',products.meat);
+  renderCat('sides-products',products.sides);
+  renderCat('bread-products',products.bread);
+}
+function renderCat(id,items){
+  document.getElementById(id).innerHTML=items.map(p=>`
+    <div class="product-row">
+      <div class="prod-icon">${p.icon}</div>
+      <div class="prod-info"><div class="prod-name">${p.name}</div><div class="prod-price">${fmt(p.price)}</div></div>
+      <div class="qty-ctrl">
+        <button class="qty-btn" onclick="changeQty('${p.id}',-1)">−</button>
+        <span class="qty-num" id="q-${p.id}">${cart[p.id]||0}</span>
+        <button class="qty-btn" onclick="changeQty('${p.id}',1)">+</button>
+      </div>
+    </div>`).join('');
+}
+function changeQty(id,delta){
+  cart[id]=(cart[id]||0)+delta;
+  if(cart[id]<=0) delete cart[id];
+  const el=document.getElementById('q-'+id);
+  if(el) el.textContent=cart[id]||0;
+  updateCart();
+}
+function findProduct(id){
+  for(const cat of Object.values(products)) for(const p of cat) if(p.id===id) return p;
+  return null;
+}
+function updateCart(){
+  const ci=document.getElementById('cartItems');
+  const keys=Object.keys(cart);
+  ci.innerHTML=keys.length?keys.map(id=>{
+    const p=findProduct(id);const q=cart[id];
+    return`<div class="cart-item"><span class="cart-item-name">${p.icon} ${p.name}</span><span><span class="cart-item-qty">×${q}</span><span class="cart-item-price">${fmt(p.price*q)}</span></span></div>`;
+  }).join(''):'<div class="empty-cart">Sin productos adicionales aún</div>';
+  const base=selectedBoard>=0?boards[selectedBoard].price:0;
+  const extras=Object.entries(cart).reduce((s,[id,q])=>{const p=findProduct(id);return s+(p?p.price*q:0);},0);
+  document.getElementById('baseTotal').textContent=fmt(base);
+  document.getElementById('extrasTotal').textContent=fmt(extras);
+  document.getElementById('grandTotal').textContent=fmt(base+extras);
+}
+function updateSummary(){
+  if(selectedBoard<0) return;
+  const base=boards[selectedBoard].price;
+  const extras=Object.entries(cart).reduce((s,[id,q])=>{const p=findProduct(id);return s+(p?p.price*q:0);},0);
+  document.getElementById('summary-board').textContent=boards[selectedBoard].name+' — '+fmt(base);
+  const keys=Object.keys(cart);
+  document.getElementById('summary-extras').innerHTML=keys.length?keys.map(id=>{
+    const p=findProduct(id);const q=cart[id];
+    return`<div style="display:flex;justify-content:space-between;font-size:12px;color:rgba(250,247,242,.7);margin-top:4px"><span>${p.icon} ${p.name} ×${q}</span><span>${fmt(p.price*q)}</span></div>`;
+  }).join(''):'<div style="font-size:12px;color:rgba(250,247,242,.35);font-style:italic;margin-top:4px">Sin adicionales</div>';
+  document.getElementById('summary-total').textContent=fmt(base+extras);
+}
+
+// ── WHATSAPP ───────────────────────────────────────────────
+function sendWhatsApp(){
+  const name=document.getElementById('clientName').value.trim();
+  const phone=document.getElementById('clientPhone').value.trim();
+  const date=document.getElementById('deliveryDate').value;
+  const notes=document.getElementById('notes').value.trim();
+  if(!name||!phone){alert('Por favor ingresa tu nombre y número de WhatsApp.');return;}
+  if(selectedBoard<0){alert('No hay ninguna tabla seleccionada.');return;}
+  if(!selectedLatLng){alert('Por favor selecciona tu dirección de entrega en el mapa.');return;}
+  const base=boards[selectedBoard].price;
+  const extras=Object.entries(cart).reduce((s,[id,q])=>{const p=findProduct(id);return s+(p?p.price*q:0);},0);
+  const keys=Object.keys(cart);
+  let msg=`🧀 *NUEVO PEDIDO — La Tabla Perfecta*\n\n`;
+  msg+=`👤 *Cliente:* ${name}\n📱 *Teléfono:* ${phone}\n`;
+  if(date) msg+=`📅 *Fecha entrega:* ${date}\n`;
+  msg+=`\n🍽️ *Pedido:*\n• ${boards[selectedBoard].name} — ${fmt(base)}\n`;
+  if(keys.length){
+    msg+=`\n*Adicionales:*\n`;
+    keys.forEach(id=>{const p=findProduct(id);msg+=`  + ${p.icon} ${p.name} ×${cart[id]} — ${fmt(p.price*cart[id])}\n`;});
+  }
+  msg+=`\n💰 *TOTAL: ${fmt(base+extras)}*\n`;
+  msg+=`\n📍 *Dirección:*\n${selectedAddress}`;
+  msg+=`\n🗺️ *Ver ubicación:* https://www.google.com/maps?q=${selectedLatLng.lat},${selectedLatLng.lng}`;
+  if(notes) msg+=`\n\n📝 *Señas:* ${notes}`;
+  msg+=`\n\n_Pedido desde la web_ 🌿`;
+  window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`,'_blank');
+  document.getElementById('confirmOverlay').classList.add('show');
+}
+function openDirectWA(){
+  window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent('¡Hola! Quisiera consultar sobre sus tablas de charcutería 🧀')}`,'_blank');
+}
+function closeConfirm(){
+  document.getElementById('confirmOverlay').classList.remove('show');
+  cart={};selectedBoard=-1;selectedLatLng=null;selectedAddress='';
+  document.querySelectorAll('.board-card').forEach(c=>c.classList.remove('selected'));
+  const btn=document.getElementById('continueBtn');
+  btn.disabled=true;btn.textContent='Selecciona una tabla para continuar';
+  const ad=document.getElementById('addrDisplay');
+  ad.textContent='Ninguna ubicación seleccionada aún…';ad.classList.remove('selected');
+  showTab('tablas',document.querySelector('.tab-btn'));
+}
+</script>
+</body>
+</html>
