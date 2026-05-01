@@ -200,6 +200,10 @@ hr.cdiv{border:none;border-top:1px solid rgba(250,247,242,.12);margin:1rem 0}
         <div class="category-label">🍞 Panes &amp; Crackers</div>
         <div id="bread-products"></div>
       </div>
+      <div class="category-group">
+        <div class="category-label">🥂 Vinos &amp; Bebidas</div>
+        <div id="wines-products"></div>
+      </div>
     </div>
     <div class="cart-panel">
       <div class="cart-title">🛒 Mi Selección</div>
@@ -303,7 +307,7 @@ hr.cdiv{border:none;border-top:1px solid rgba(250,247,242,.12);margin:1rem 0}
 // ═══════════════════════════════════════════════════════════
 //  CONFIGURACIÓN — edita estos valores
 // ═══════════════════════════════════════════════════════════
-const WA_NUMBER  = '50685564293';      // Número WhatsApp del negocio (con código país)
+const WA_NUMBER  = '50684664545';      // Número WhatsApp del negocio (con código país)
 const MAP_CENTER = [9.9281, -84.0907]; // Centro inicial del mapa (San José, CR)
 const MAP_ZOOM   = 13;
 // ═══════════════════════════════════════════════════════════
@@ -342,7 +346,13 @@ const products = {
     {id:'b2',icon:'🥨',name:'Crackers de romero',     price:1400},
     {id:'b3',icon:'🥖',name:'Crostini de oliva',      price:1600},
     {id:'b4',icon:'🍪',name:'Galletas de arroz',      price:900}
-  ]
+  ],
+  wines:[
+    {id:'b1',icon:'🥂',name:'Catena (Argentina)',     price:1200},
+    {id:'b2',icon:'🥂',name:'Penfolds (Australia)',   price:1400},
+    {id:'b3',icon:'🥂',name:'Torres (España)',        price:1600},
+    {id:'b4',icon:'🥂',name:'Concha y Toro (Chile)',  price:900}
+    ]
 };
 
 let selectedBoard=-1, cart={}, map=null, marker=null;
@@ -449,6 +459,7 @@ function renderProducts(){
   renderCat('meat-products',products.meat);
   renderCat('sides-products',products.sides);
   renderCat('bread-products',products.bread);
+  renderCat('wines-products',products.wines);
 }
 function renderCat(id,items){
   document.getElementById(id).innerHTML=items.map(p=>`
